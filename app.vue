@@ -1,10 +1,90 @@
 <template>
   <div>
-    <Questions :questions="questions" />
+    <template v-for="(questions, index) in chunkedQuestions">
+      <Questions
+        v-if="displayPage === index"
+        :questions="questions"
+        :chunked-index="index"
+      />
+    </template>
+
+    <button @click="prevPage" :disabled="isMinPage">前へ</button>
+    <button @click="nextPage" :disabled="isMaxPage">次へ</button>
+
+    <button @click="onClick" v-if="isMaxPage">送信</button>
+
+    <pre>
+
+      {{ errors }}
+    </pre>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useForm, type ValidationResult } from "vee-validate";
+import { QuestionItemListSchema } from "./schema";
+import { toTypedSchema } from "@vee-validate/yup";
+
+const isMaxPage = computed(
+  () => displayPage.value === chunkedQuestions.value.length - 1
+);
+const isMinPage = computed(() => displayPage.value === 0);
+
+const { handleSubmit, values, validateField, setFieldValue, errors } = useForm({
+  validationSchema: toTypedSchema(QuestionItemListSchema),
+  keepValuesOnUnmount: true,
+});
+
+/**
+ * 指定したindexから10件のバリデーションを実行する
+ */
+const validateRange = async (startIndex: number, limit: number) => {
+  const validationFns = Array.from({ length: limit }, (_, i) => {
+    // @ts-ignore
+    return validateField(`items[${startIndex + i}].value`);
+  });
+
+  const result = await Promise.all(validationFns);
+
+  return result.every((r) => r.valid);
+};
+
+const displayPage = ref(0);
+
+const nextPage = async () => {
+  const result = await validateRange(
+    displayPage.value * 10,
+    chunkedQuestions.value[displayPage.value].length
+  );
+  console.log(result);
+  if (!isMaxPage.value && result) {
+    displayPage.value++;
+  }
+};
+
+const prevPage = () => {
+  if (!isMinPage.value) {
+    displayPage.value--;
+  }
+};
+
+const onClick = handleSubmit(
+  (values) => {
+    console.log(values);
+  },
+  (e) => {
+    console.log("error", e);
+  }
+);
+
+/**
+ * 引数の配列を10件ずつに分割する、あまりは10件未満のアイテムになる
+ */
+const chunk = (array: any[], size: number) =>
+  Array.from({ length: Math.ceil(array.length / size) }, (_, i) =>
+    array.slice(i * size, i * size + size)
+  );
+
 /**
  * 設問の固定値的な
  */
@@ -267,5 +347,5 @@ const questions: {
   },
 ];
 
-const test = ref("test");
+const chunkedQuestions = ref(chunk(questions, 10));
 </script>

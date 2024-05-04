@@ -1,4 +1,4 @@
-import { object, string, number, type InferType } from "yup";
+import { object, string, number, type InferType, array } from "yup";
 import { toTypedSchema } from "@vee-validate/yup";
 
 /**
@@ -11,8 +11,12 @@ const QuestionItemSchemaBase = object({
 
 /** モデルの型定義 */
 export type QuestionItem = InferType<typeof QuestionItemSchemaBase>;
-/** typedSchema */
-export const QuestionItemSchema = toTypedSchema(QuestionItemSchemaBase);
+/** QuestionItem typedSchema */
+export const QuestionItemSchema = QuestionItemSchemaBase;
+/** QuestionItems typedSchema */
+export const QuestionItemListSchema = object({
+  items: array().of(QuestionItemSchemaBase).required().min(1).default([]),
+});
 /** モデル生成 */
 export const QuestionItemCast = (value: any): QuestionItem => {
   return QuestionItemSchemaBase.cast(value);

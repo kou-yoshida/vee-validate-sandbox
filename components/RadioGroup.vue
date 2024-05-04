@@ -3,12 +3,15 @@
     <label v-for="(option, index) in options" :key="index" class="radio-option">
       <input
         type="radio"
-        :value="option"
+        :value="option.id"
         class="radio-input"
         :name="fieldPath"
+        @change="handleChange"
+        :checked="questionValue === option.id"
       />
       <span class="radio-label">{{ option }}</span>
     </label>
+    {{ errorMessage }}
   </div>
 </template>
 
@@ -19,10 +22,21 @@ import { type QuestionItem } from "../schema";
 const props = defineProps<{
   options: { id: number; label: string }[];
   fieldPath: string;
+  questionId: number;
 }>();
 
-const { value: questionItem } = useField<Partial<QuestionItem>>(
-  () => props.fieldPath
+const {
+  value: questionValue,
+  handleChange,
+  errorMessage,
+} = useField<number | undefined>(() => `${props.fieldPath}.value`);
+
+const { value: questionId } = useField<number>(
+  () => `${props.fieldPath}.id`,
+  undefined,
+  {
+    initialValue: props.questionId,
+  }
 );
 </script>
 

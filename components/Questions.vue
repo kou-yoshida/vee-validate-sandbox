@@ -6,7 +6,8 @@
         <h4>{{ question.label }}</h4>
         <RadioGroup
           :options="question.options"
-          :field-path="`path[${index}]`"
+          :field-path="`items.${chunkedIndex * 10 + index}`"
+          :questionId="question.id"
         />
       </div>
     </div>
@@ -25,5 +26,6 @@ type Question = Radio;
 
 const props = defineProps<{
   questions: Question[];
+  chunkedIndex: number;
 }>();
 </script>
