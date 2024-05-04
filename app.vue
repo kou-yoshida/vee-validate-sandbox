@@ -13,9 +13,8 @@
 
     <button @click="onClick" v-if="isMaxPage">送信</button>
 
-    <pre>
-
-      {{ errors }}
+    <pre
+      >{{ values }}
     </pre>
   </div>
 </template>
@@ -25,6 +24,8 @@ import { useForm, type ValidationResult } from "vee-validate";
 import { QuestionItemListSchema } from "./schema";
 import { toTypedSchema } from "@vee-validate/yup";
 
+const router = useRouter();
+const route = useRoute();
 const isMaxPage = computed(
   () => displayPage.value === chunkedQuestions.value.length - 1
 );
@@ -49,7 +50,7 @@ const validateRange = async (startIndex: number, limit: number) => {
   return result.every((r) => r.valid);
 };
 
-const displayPage = ref(0);
+const displayPage = ref(Number(route.query.page) - 1 || 0);
 
 const nextPage = async () => {
   const result = await validateRange(
@@ -57,16 +58,35 @@ const nextPage = async () => {
     chunkedQuestions.value[displayPage.value].length
   );
   console.log(result);
-  if (!isMaxPage.value && result) {
+  if (!isMaxPage.value) {
     displayPage.value++;
+    router.push({ query: { page: displayPage.value + 1 } });
   }
 };
 
 const prevPage = () => {
   if (!isMinPage.value) {
     displayPage.value--;
+    router.push({ query: { page: displayPage.value + 1 } });
   }
 };
+
+watch(
+  () => route.query.page,
+  (newPage) => {
+    // クエリがない場合は1ページ目にする
+    if (isNaN(Number(newPage))) {
+      router.push({ query: { page: 1 } });
+      displayPage.value = 0;
+    }
+
+    // 表示ページをクエリに合わせる
+    displayPage.value = Number(newPage) - 1;
+  },
+  {
+    immediate: true,
+  }
+);
 
 const onClick = handleSubmit(
   (values) => {
